@@ -44,7 +44,6 @@
         @endrole
 
         @role('inputer|checker')
-          {{-- Hapus: inputer hanya bisa hapus miliknya & status pending (dibatasi di controller) --}}
           <form method="POST" action="{{ route('debtors.destroy', $debtor) }}"
                 onsubmit="return confirm('Yakin ingin menghapus debitur ini? Tindakan tidak dapat dibatalkan.');">
             @csrf @method('DELETE')
@@ -59,6 +58,10 @@
 
   @php
     $money = fn($n) => 'Rp '.number_format((float)$n, 0, ',', '.');
+    $fmt = fn($v) => (isset($v) && $v !== '' ? $v : '—');
+    $fmtDate = fn($v) => $v ? \Carbon\Carbon::parse($v)->translatedFormat('d F Y') : '—';
+    $fmtPct = fn($v) => isset($v) && $v !== '' ? rtrim(rtrim(number_format((float)$v, 2, ',', '.'), '0'), ',').' %' : '—';
+    $fmtMoney = fn($v) => isset($v) && $v !== '' ? $money($v) : '—';
     $badge = [
       'pending'  => 'bg-amber-100 text-amber-800 border-amber-300',
       'approved' => 'bg-emerald-100 text-emerald-800 border-emerald-300',
@@ -130,6 +133,131 @@
       </div>
     </div>
 
+    {{-- DETAIL DEBITUR (data yang diinput saat tambah) --}}
+    <div class="rounded-xl bg-white shadow-sm border border-gray-200">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-lg font-semibold text-gray-900">Detail Debitur</h3>
+        <p class="text-xs text-gray-500 mt-1">Berikut data tambahan yang diisikan saat tambah debitur.</p>
+      </div>
+
+      <div class="px-5 py-4">
+        @if(!isset($detail) || !$detail)
+          <div class="text-sm text-gray-500">Belum ada detail yang tersimpan.</div>
+        @else
+          <div class="grid md:grid-cols-2 gap-6">
+            {{-- Kolom Kiri --}}
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Input Date</div>
+                <div class="text-gray-900 font-medium">{{ $fmtDate($detail->input_date ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Loan Number</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->loan_number ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Bank / Project Alias</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->bank_alias ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Project Text</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->project_text ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Payer</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->payer ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Pension</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->pension ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Area</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->area ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Branch</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->branch ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Submission Type</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->submission_type ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">No. Rekening</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->account_number ?? null) }}</div>
+              </div>
+            </div>
+
+            {{-- Kolom Kanan --}}
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Agreement Date</div>
+                <div class="text-gray-900 font-medium">{{ $fmtDate($detail->agreement_date ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Start Credit Date</div>
+                <div class="text-gray-900 font-medium">{{ $fmtDate($detail->start_credit_date ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">End Credit Date</div>
+                <div class="text-gray-900 font-medium">{{ $fmtDate($detail->end_credit_date ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Disbursement Date</div>
+                <div class="text-gray-900 font-medium">{{ $fmtDate($detail->disbursement_date ?? null) }}</div>
+              </div>
+
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Alamat</div>
+                <div class="text-gray-900 font-medium text-right">{{ $fmt($detail->address ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Kelurahan</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->kelurahan ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Kecamatan</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->kecamatan ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Kabupaten</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->kabupaten ?? null) }}</div>
+              </div>
+              <div class="flex justify-between gap-4">
+                <div class="text-gray-500">Provinsi</div>
+                <div class="text-gray-900 font-medium">{{ $fmt($detail->provinsi ?? null) }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-6 mt-6">
+            <div class="rounded-lg border border-gray-200 p-4">
+              <div class="text-xs text-gray-500 mb-2">Persentase</div>
+              <div class="flex justify-between text-sm"><span class="text-gray-500">Interest Rate</span><span class="font-medium text-gray-900">{{ $fmtPct($detail->interest_rate ?? null) }}</span></div>
+              <div class="flex justify-between text-sm mt-1"><span class="text-gray-500">BAA %</span><span class="font-medium text-gray-900">{{ $fmtPct($detail->baa_percent ?? null) }}</span></div>
+            </div>
+
+            <div class="rounded-lg border border-gray-200 p-4">
+              <div class="text-xs text-gray-500 mb-2">Biaya</div>
+              <div class="flex justify-between text-sm"><span class="text-gray-500">Provisi</span><span class="font-medium text-gray-900">{{ $fmtMoney($detail->provisi ?? null) }}</span></div>
+              <div class="flex justify-between text-sm mt-1"><span class="text-gray-500">Administrasi</span><span class="font-medium text-gray-900">{{ $fmtMoney($detail->administrasi ?? null) }}</span></div>
+              <div class="flex justify-between text-sm mt-1"><span class="text-gray-500">Asuransi</span><span class="font-medium text-gray-900">{{ $fmtMoney($detail->asuransi ?? null) }}</span></div>
+              <div class="flex justify-between text-sm mt-1"><span class="text-gray-500">Tata Kelola</span><span class="font-medium text-gray-900">{{ $fmtMoney($detail->tata_kelola ?? null) }}</span></div>
+              <div class="flex justify-between text-sm mt-1"><span class="text-gray-500">Angsuran di Muka</span><span class="font-medium text-gray-900">{{ $fmtMoney($detail->angsuran_dimuka ?? null) }}</span></div>
+            </div>
+
+            <div class="rounded-lg border border-gray-200 p-4">
+              <div class="text-xs text-gray-500 mb-2">Lainnya</div>
+              <div class="flex justify-between text-sm"><span class="text-gray-500">BAA Value</span><span class="font-medium text-gray-900">{{ $fmtMoney($detail->baa_value ?? null) }}</span></div>
+              <div class="flex justify-between text-sm mt-1"><span class="text-gray-500">Total Installment</span><span class="font-medium text-gray-900">{{ $fmtMoney($detail->total_installment ?? null) }}</span></div>
+              <div class="flex justify-between text-sm mt-1"><span class="text-gray-500">Tanggal Lahir</span><span class="font-medium text-gray-900">{{ $fmtDate($detail->birth_date ?? null) }}</span></div>
+            </div>
+          </div>
+        @endif
+      </div>
+    </div>
+
     {{-- PAYMENT SCHEDULE --}}
     <div class="rounded-xl bg-white shadow-sm border border-gray-200">
       <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -152,10 +280,10 @@
                 <th class="px-4 py-3 text-left font-semibold">Angs Ke</th>
                 <th class="px-4 py-3 text-left font-semibold">Tgl-Bln-Thn</th>
                 <th class="px-4 py-3 text-right font-semibold">Out Standing</th>
-                <th class="px-4 py-3 text-right font-semibold">Angs. Pokok</th>
-                <th class="px-4 py-3 text-right font-semibold">Angs. Bunga</th>
-                <th class="px-4 py-3 text-right font-semibold">Adm. Angsuran</th>
-                <th class="px-4 py-3 text-right font-semibold">Total Angs.</th>
+                <th class="px-4 py-3 text-right font-semibold">Angsuran Pokok</th>
+                <th class="px-4 py-3 text-right font-semibold">Angsuran Bunga</th>
+                <th class="px-4 py-3 text-right font-semibold">Administrasi Angsuran</th>
+                <th class="px-4 py-3 text-right font-semibold">Total Angsuran</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">

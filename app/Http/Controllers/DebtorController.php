@@ -13,9 +13,6 @@ use Carbon\Carbon;
 
 class DebtorController extends Controller
 {
-    /* ============================================================
-     |  Header alias yang dikenali saat import (minimal nopen & name)
-     * ============================================================ */
     private array $ALIAS = [
         'nopen' => [
             'NOPEN','NO.PENSIUN','NO PENSIUN','NO.PENSIUN/NOPEN','NO PENSIUN (NOPEN)','NO.PEN','NO PEN'
@@ -30,13 +27,9 @@ class DebtorController extends Controller
         'plafon'   => ['PLAFOND PINJAMAN','PLAFOND','PLAFOND KREDIT','PLAFON','PLAFON KREDIT'],
         'akad'     => ['TGL.PK','TGL PK','TANGGAL AKAD','TGL AKAD','TGL.PEMBIAYAAN','TGL PEMBIAYAAN','TGL.PEMBAYARAN','TGL PEMBAYARAN'],
 
-        // kolom-kolom yang bisa memuat identitas project/bank
         'project_hint' => ['KREDITUR','KREDITOR','PRODUK LOAN','PRODUK','KREDITUR TAKE OVER','KREDITUR ASAL TAKE OVER','KANTOR BAYAR TUJUAN','KANTOR BAYAR','BANK'],
     ];
 
-    /* ============================================================
-     |  Daftar sinonim project (membantu pencocokan — TIDAK bikin project baru)
-     * ============================================================ */
     private array $PROJECT_CANON = [
         'kbbank'                     => 'KB BANK',
         'kbbanksyariah'              => 'KB BANK SYARIAH',
@@ -82,7 +75,6 @@ class DebtorController extends Controller
             $q->where(fn($x) => $x->where('nopen','ilike',"%$s%")->orWhere('name','ilike',"%$s%"));
         }
 
-        /** batasan visibilitas */
         $u = Auth::user();
         if ($u->hasRole('inputer'))      $q->where(fn($x)=> $x->where('user_id',$u->id)->orWhere('status','approved'));
         elseif ($u->hasRole('viewer'))   $q->where('status','approved');
@@ -106,7 +98,6 @@ class DebtorController extends Controller
     {
         $this->authorizeRole(['inputer','checker']);
 
-        // validasi core Debtor
         $base = $r->validate([
             'project_id'     => ['nullable','exists:projects,id'],
             'nopen'          => ['required','string','max:100','unique:debtors,nopen'],
@@ -118,7 +109,6 @@ class DebtorController extends Controller
             'akad_date'      => ['required','date'],
         ]);
 
-        // validasi detail (opsional)
         $detail = $r->validate([
             'input_date'         => ['nullable','date'],
             'loan_number'        => ['nullable','string','max:100'],
@@ -136,7 +126,7 @@ class DebtorController extends Controller
             'interest_rate'      => ['nullable'],
             'baa_percent'        => ['nullable'],
             'agreement_date'     => ['nullable','date'],
-            'start_credit_date'  => ['nullable','date'], // tanggal pertama debitur menerima uang
+            'start_credit_date'  => ['nullable','date'],
             'end_credit_date'    => ['nullable','date'],
             'disbursement_date'  => ['nullable','date'],
             'provisi'            => ['nullable'],
@@ -148,10 +138,9 @@ class DebtorController extends Controller
             'baa_value'          => ['nullable'],
             'total_installment'  => ['nullable'],
             'account_number'     => ['nullable','string','max:100'],
-            'bank_alias'         => ['nullable','string','max:200'], // alias Project
+            'bank_alias'         => ['nullable','string','max:200'],
         ]);
 
-        // project dari dropdown / alias bank (tidak membuat project baru)
         $projectId = $base['project_id'] ?? null;
         if (!$projectId && !empty($detail['bank_alias'])) {
             $pid = $this->resolveExistingProjectIdFromHint($detail['bank_alias']);
@@ -167,7 +156,6 @@ class DebtorController extends Controller
         $base['user_id']    = Auth::id();
         $base['project_id'] = $projectId;
 
-        // ringkasan outstanding & arrears
         [$outstanding, $arrears] = $this->calcAmounts(
             (int)$base['tenor'], (int)$base['installment_no'], (float)$base['installment'], (string)$base['akad_date']
         );
@@ -176,7 +164,7 @@ class DebtorController extends Controller
 
         $debtor = Debtor::create($base);
 
-        // normalisasi angka pecahan (Rp / %)
+        // normalisasi angka pecahan di detail
         $toFloat = function($v){
             if ($v === null || $v === '') return null;
             $s = (string)$v;
@@ -262,7 +250,6 @@ class DebtorController extends Controller
             'bank_alias'         => ['nullable','string','max:200'],
         ]);
 
-        // tentukan project
         $projectId = $base['project_id'] ?? null;
         if (!$projectId && !empty($detail['bank_alias'])) {
             $pid = $this->resolveExistingProjectIdFromHint($detail['bank_alias']);
@@ -276,7 +263,6 @@ class DebtorController extends Controller
 
         $base['project_id'] = $projectId;
 
-        // hitung ulang ringkasan
         [$outstanding, $arrears] = $this->calcAmounts(
             (int)$base['tenor'], (int)$base['installment_no'], (float)$base['installment'], (string)$base['akad_date']
         );
@@ -285,7 +271,6 @@ class DebtorController extends Controller
 
         $debtor->update($base);
 
-        // normalisasi angka-angka pecahan di detail
         $toFloat = function($v){
             if ($v === null || $v === '') return null;
             $s = (string)$v;
@@ -306,7 +291,6 @@ class DebtorController extends Controller
             else { $detail['debtor_id'] = $debtor->id; $debtor->details()->create($detail); }
         }
 
-        // bila sudah approved, sinkronkan repayment & ringkasan
         if ($debtor->status === 'approved') {
             $this->ensureRepaymentsForDebtor($debtor);
             $this->recalcSummaryFromRepayments($debtor);
@@ -338,57 +322,18 @@ class DebtorController extends Controller
     /* =================== DETAIL =================== */
     public function show(Debtor $debtor)
     {
-        $debtor->load('project', 'details');
-
-        // Ambil jadwal dari repayments; kalau belum ada, generate on-the-fly
-        $rows = Repayment::where('debtor_id',$debtor->id)->orderBy('period_date')->get();
-
-        if ($rows->isEmpty() && $debtor->tenor && $debtor->installment) {
-            $anchor   = $this->firstPaymentAnchorDate($debtor) ?? Carbon::now();
-            $startIdx = max(0, (int)$debtor->installment_no); // SKIP angsuran yang sudah dibayar
-            for ($i = $startIdx; $i < (int)$debtor->tenor; $i++) {
-                $rows->push((object)[
-                    'period_date' => $anchor->copy()->addMonthsNoOverflow($i)->format('Y-m-d'),
-                    'amount_due'  => (float)$debtor->installment,
-                    'amount_paid' => 0,
-                    'status'      => 'UNPAID',
-                    'seq'         => $i + 1, // nomor angsuran sesungguhnya
-                ]);
-            }
-        } else {
-            // beri nomor urut sesuai posisi setelah installment_no
-            $seqBase = (int)$debtor->installment_no + 1;
-            foreach ($rows as $k => $r) { $r->seq = $seqBase + $k; }
-        }
-
-        return view('debtors.show', compact('debtor','rows'));
+        $debtor->load('project','details');
+        $detail = optional($debtor->details()->latest('id')->first());
+        $rows = $this->buildScheduleRows($debtor);
+        return view('debtors.show', compact('debtor','rows','detail'));
     }
 
     /* =================== PRINT SCHEDULE =================== */
     public function printSchedule(Debtor $debtor)
     {
         $debtor->load('project');
-
-        $rows = Repayment::where('debtor_id',$debtor->id)->orderBy('period_date')->get();
-        if ($rows->isEmpty() && $debtor->tenor && $debtor->installment) {
-            $anchor   = $this->firstPaymentAnchorDate($debtor) ?? Carbon::now();
-            $startIdx = max(0, (int)$debtor->installment_no);
-            for ($i = $startIdx; $i < (int)$debtor->tenor; $i++) {
-                $rows->push((object)[
-                    'period_date' => $anchor->copy()->addMonthsNoOverflow($i)->format('Y-m-d'),
-                    'amount_due'  => (float)$debtor->installment,
-                    'amount_paid' => 0,
-                    'status'      => 'UNPAID',
-                    'seq'         => $i + 1,
-                ]);
-            }
-        } else {
-            $seqBase = (int)$debtor->installment_no + 1;
-            foreach ($rows as $k => $r) { $r->seq = $seqBase + $k; }
-        }
-
-        // view: resources/views/debtors/print.blade.php
-        return view('debtors.print', compact('debtor','rows'));
+        $rows = $this->buildScheduleRows($debtor);
+        return view('debtors.print', ['debtor'=>$debtor,'rows'=>$rows]);
     }
 
     /* =================== IMPORT (EXCEL) =================== */
@@ -427,7 +372,6 @@ class DebtorController extends Controller
         $rows    = $sheet->toArray(null, true, true, true);
         $lastRow = $sheet->getHighestDataRow();
 
-        // cari baris data pertama
         $firstDataRow = null;
         $probeLimit = min($lastRow, $headerMaxRow + 300);
         for ($i = $headerMaxRow + 1; $i <= $probeLimit; $i++) {
@@ -465,14 +409,12 @@ class DebtorController extends Controller
             $akadRaw   = $this->cleanStr($row[$colMap['akad']]  ?? '');
             $akadDate  = $this->parseDateLoose($akadRaw)?->format('Y-m-d');
 
-            // cek kosong total
             if ($nopen==='' && $name==='' && $tenor===0 && $angsKe===0 && $angsuran===0.0 && $plafon===0.0 && !$akadDate) {
                 $skBlank++; continue;
             }
             if (!$this->looksLikeNopen($nopen)) { $skBadNopen++; continue; }
             if (!$this->looksLikeName($name))   { $skBadName++;  continue; }
 
-            // Tentukan Project (tanpa membuat project baru)
             $projectId = $forcedProjectId ?: $this->projectIdFromMultipleHints($row, $colMap);
             if (!$projectId) { $skNoProject++; continue; }
 
@@ -515,7 +457,6 @@ class DebtorController extends Controller
                 . ($inserted>0 ? " | Batch: {$batchId} (bisa di-rollback)" : ''));
     }
 
-    /* ============ Rollback batch import (hapus debitur yang baru dibuat oleh batch tsb) ============ */
     public function rollbackImport(string $batch)
     {
         $this->authorizeRole(['checker']); // batasi checker
@@ -528,7 +469,6 @@ class DebtorController extends Controller
     public function destroy(Debtor $debtor)
     {
         $this->authorizeRole(['inputer','checker']);
-        // batasi inputer hanya boleh menghapus miliknya sendiri & yang masih pending
         $u = Auth::user();
         if ($u->hasRole('inputer') && ($debtor->user_id !== $u->id || $debtor->status !== 'pending')) {
             abort(403);
@@ -548,10 +488,9 @@ class DebtorController extends Controller
     private function ensureCanEdit(Debtor $debtor): void
     {
         $u = Auth::user();
-        if ($u->hasRole('checker')) return; // checker boleh edit semuanya
+        if ($u->hasRole('checker')) return;
 
         if ($u->hasRole('inputer')) {
-            // inputer hanya boleh edit miliknya sendiri & masih pending
             abort_unless($debtor->user_id === $u->id && $debtor->status === 'pending', 403);
             return;
         }
@@ -571,7 +510,7 @@ class DebtorController extends Controller
         if ($s === '') return '';
         $s = str_replace("\xC2\xA0", ' ', $s);
         $s = html_entity_decode($s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $s = preg_replace('/\s*[a-z-]+\s*=\s*"[^"]*"/i', ' ', $s); // align="..." dll
+        $s = preg_replace('/\s*[a-z-]+\s*=\s*"[^"]*"/i', ' ', $s);
         $s = strip_tags($s);
         $s = preg_replace('/\s+/u', ' ', $s);
         return trim($s, " \t\n\r\0\x0B\"'");
@@ -698,7 +637,7 @@ class DebtorController extends Controller
             $val = $this->cleanStr($row[$c['col']] ?? '');
             if ($val === '') continue;
 
-            $pid = $this->resolveExistingProjectIdFromHint($val); // <-- hanya cari yang sudah ada
+            $pid = $this->resolveExistingProjectIdFromHint($val);
             if ($pid) return $pid;
         }
         return null;
@@ -761,16 +700,13 @@ class DebtorController extends Controller
         return [$outstanding, $arrears];
     }
 
-    /** Cari project yang SUDAH ADA dari sebuah hint (tanpa membuat baru) */
     private function resolveExistingProjectIdFromHint(?string $hint): ?int
     {
         $hint = $this->cleanStr($hint);
         if ($hint === '') return null;
 
-        // normalisasi
         $normKey = Str::of($hint)->lower()->replaceMatches('/[^a-z0-9]+/u','')->toString();
 
-        // mapping sinonim → label resmi
         $mapContains = [
             'KBBANK'          => 'KB BANK',
             'PLATINUMKBBANK'  => 'KB BANK',
@@ -794,7 +730,6 @@ class DebtorController extends Controller
         $H = strtoupper($hint);
 
         $projects = Project::all(['id','name']);
-        // 1) coba pakai mapping contain -> official
         foreach ($mapContains as $needle => $official) {
             if (str_contains($H, $needle)) {
                 $p = $projects->first(function($x) use($official){
@@ -803,19 +738,16 @@ class DebtorController extends Controller
                 if ($p) return $p->id;
             }
         }
-        // 2) cocokkan fuzzy: norm(hint) ≈ norm(nama project)
         foreach ($projects as $p) {
             $pn = Str::of($p->name)->lower()->replaceMatches('/[^a-z0-9]+/u','')->toString();
             if ($pn !== '' && (str_contains($pn,$normKey) || str_contains($normKey,$pn))) {
                 return $p->id;
             }
         }
-        // 3) LIKE biasa
         $existing = Project::where('name','ILIKE',"%{$hint}%")->first();
         return $existing?->id;
     }
 
-    /** Ambil anchor date = tanggal pertama pencairan jika ada, selain itu pakai akad_date */
     private function firstPaymentAnchorDate(Debtor $debtor): ?Carbon
     {
         $date = $debtor->akad_date;
@@ -828,6 +760,51 @@ class DebtorController extends Controller
         }
 
         return $date ? Carbon::parse($date) : null;
+    }
+
+    /** Buat / dekorasi baris schedule agar cocok dengan kolom di Blade */
+    private function buildScheduleRows(Debtor $debtor)
+    {
+        $rows = Repayment::where('debtor_id',$debtor->id)->orderBy('period_date')->get();
+
+        $anchor = $this->firstPaymentAnchorDate($debtor) ?? Carbon::parse($debtor->akad_date ?? now());
+        $tenor  = (int) $debtor->tenor;
+        $paidNo = max(0, (int) $debtor->installment_no);
+        $amount = (float) $debtor->installment;
+
+        // kalau DB kosong, generate jadwalnya
+        if ($rows->isEmpty() && $tenor && $amount) {
+            for ($i = $paidNo; $i < $tenor; $i++) {
+                $rows->push((object)[
+                    'period_date' => $anchor->copy()->addMonthsNoOverflow($i)->format('Y-m-d'),
+                    'amount_due'  => $amount,
+                    'amount_paid' => 0,
+                    'status'      => 'UNPAID',
+                ]);
+            }
+        }
+
+        $seqBase = $paidNo + 1;
+
+        // dekorasi: tambahkan properti yang dipakai Blade
+        return $rows->values()->map(function($r,$k) use($tenor,$paidNo,$amount,$seqBase){
+            $total = (float)($r->amount_due ?? $amount);
+            $beforeOutstanding = max(0, ($tenor - ($paidNo + $k)) * $amount);
+
+            return (object)[
+                'seq'         => $seqBase + $k,
+                'period_date' => ($r->period_date instanceof \DateTimeInterface)
+                                    ? $r->period_date->format('Y-m-d')
+                                    : (string)$r->period_date,
+                'outstanding' => $beforeOutstanding,
+                'pokok'       => $total,   // simplifikasi
+                'bunga'       => 0.0,
+                'adm'         => 0.0,
+                'total'       => $total,
+                'is_prepaid'  => $k < $paidNo,
+                'status'      => $r->status ?? 'UNPAID',
+            ];
+        });
     }
 
     private function ensureRepaymentsForDebtor(Debtor $debtor): void

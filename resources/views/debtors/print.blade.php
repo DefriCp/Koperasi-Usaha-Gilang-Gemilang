@@ -64,10 +64,10 @@
         <th style="width:7%">Angs Ke</th>
         <th style="width:18%">Tgl-Bln-Thn</th>
         <th style="width:15%">Out Standing</th>
-        <th style="width:15%">Angs. Pokok</th>
-        <th style="width:15%">Angs. Bunga</th>
-        <th style="width:15%">Adm. Angsuran</th>
-        <th style="width:15%">Total Angs.</th>
+        <th style="width:15%">Angsuran Pokok</th>
+        <th style="width:15%">Angsuran Bunga</th>
+        <th style="width:15%">Administrasi Angsuran</th>
+        <th style="width:15%">Total Angsuran</th>
       </tr>
     </thead>
     <tbody>

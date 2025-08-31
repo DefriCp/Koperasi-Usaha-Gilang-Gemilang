@@ -11,7 +11,6 @@ class FortifyServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Pakai view kustom untuk login
         Fortify::loginView(fn () => view('auth.login'));
     }
 }

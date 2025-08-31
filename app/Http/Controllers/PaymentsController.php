@@ -11,7 +11,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PaymentsController extends Controller
 {
-    /** Halaman Payments (filter bulan/tahun + tabel) */
     public function index(Request $r)
     {
         $month = (int) ($r->input('month') ?: now()->month);
@@ -59,7 +58,6 @@ class PaymentsController extends Controller
     /** APPROVE pembayaran oleh CHECKER */
     public function approve(Repayment $repayment, Request $request)
     {
-        // Jika belum diisi, anggap dibayar penuh sebesar amount_due
         $amount = (float) ($request->input('amount_paid') ?: $repayment->amount_due);
 
         $repayment->update([

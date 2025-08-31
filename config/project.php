@@ -2,7 +2,6 @@
 
 return [
 
-    // === NAMA RESMI YANG HARUS ADA DI DB ===
     'official' => [
         'KB BANK',
         'KB BANK SYARIAH',
@@ -16,7 +15,6 @@ return [
         'BPR RIFI',
         'BPR NBP29',
 
-        // Channeling / Execut / Sub Channeling (dari gambar)
         'CHANNELING BANK BUKOPIN / KB BANK',
         'CHANNELING BANK MNC',
         'CHANNELING BPR ADHIERRESA / VIMA',
@@ -39,9 +37,6 @@ return [
         'SUB CHANNELING SSB BPR PERDANA',
     ],
 
-    // === ALIAS → OFFICIAL ===
-    // Kunci dicocokkan menggunakan "contains" (case-insensitive).
-    // Semakin spesifik di atas, semakin baik.
     'alias_map' => [
         // Bank inti
         'PLATINUM KB BANK'      => 'KB BANK',
@@ -58,7 +53,6 @@ return [
         'PERDANA'               => 'BPR PERDANA',
         'NBP29'                 => 'BPR NBP29',
 
-        // Channeling / dll (gunakan cocok-mengandung)
         'CHANNELING BANK BUKOPIN'      => 'CHANNELING BANK BUKOPIN / KB BANK',
         'CHANELLING BANK BUKOPIN'      => 'CHANNELING BANK BUKOPIN / KB BANK',
         'CHANNELING BANK MNC'          => 'CHANNELING BANK MNC',

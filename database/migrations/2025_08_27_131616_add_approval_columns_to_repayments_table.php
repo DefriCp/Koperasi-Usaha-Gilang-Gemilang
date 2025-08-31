@@ -17,7 +17,6 @@ return new class extends Migration {
                 $t->timestamp('rejected_at')->nullable();
                 $t->string('rejected_reason', 500)->nullable();
             }
-            // pastikan kolom status ada
             if (!Schema::hasColumn('repayments','status')) {
                 $t->string('status')->default('UNPAID')->index();
             }

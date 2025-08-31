@@ -8,19 +8,16 @@
   --gg-green:#1E5E46;
 }
 
-/* titik2 aksen seperti company profile */
 .dot-grid {
   background-image: radial-gradient(var(--gg-orange) 1.6px, transparent 1.6px);
   background-size: 14px 14px;
 }
 
-/* garis aksen kecil */
 .brand-bar {
   @apply h-1.5 rounded-full bg-brand-orange;
   width: 64px;
 }
 
-/* tombol utama & sekunder */
 .btn-brand {
   @apply inline-flex items-center gap-2 px-5 h-11 rounded-xl text-white font-semibold shadow-soft transition;
   background: linear-gradient(90deg, #E97325, #F39C3A);
@@ -32,21 +29,17 @@
   border-color: rgba(30,94,70,.2);
 }
 
-/* kartu putih lembut */
 .card {
   @apply bg-white rounded-2xl shadow-soft border border-gray-100;
 }
 
-/* tag/chip */
 .chip {
   @apply inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-brand-sand text-brand-green border border-brand-green/20;
 }
 
-/* animasi reveal sederhana */
 .reveal { opacity: 0; transform: translateY(16px); transition: .6s ease; }
 .reveal.show { opacity: 1; transform: none; }
 
-/* gelombang bawah hero (tanpa gambar) */
 .hero-wave {
   position: relative;
   overflow: hidden;

@@ -10,7 +10,6 @@ class ProjectSeeder extends Seeder
 {
     public function run(): void
     {
-        // Daftar final project yang boleh ada
         $names = [
             'CHANNELING BANK BUKOPIN / KB BANK',
             'CHANNELING BANK MNC',
@@ -36,10 +35,7 @@ class ProjectSeeder extends Seeder
         ];
 
         DB::transaction(function () use ($names) {
-            // HAPUS semua project yang tidak ada di whitelist
             Project::whereNotIn('name', $names)->delete();
-
-            // Pastikan semua di whitelist ada (idempotent)
             foreach ($names as $nm) {
                 Project::firstOrCreate(['name' => $nm]);
             }

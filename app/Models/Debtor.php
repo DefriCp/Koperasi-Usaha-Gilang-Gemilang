@@ -5,14 +5,26 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Debtor extends Model
 {
     protected $fillable = [
-        'project_id','user_id','nopen','name','plafond',
-        'installment','tenor','installment_no','akad_date',
-        'outstanding','arrears','status','approved_by','approved_at',
-        'import_batch', // <-- untuk rollback import
+        'project_id',
+        'user_id',
+        'nopen',
+        'name',
+        'plafond',
+        'installment',
+        'tenor',
+        'installment_no',
+        'akad_date',
+        'outstanding',
+        'arrears',
+        'status',
+        'approved_by',
+        'approved_at',
+        'import_batch', // untuk rollback import
     ];
 
     protected $casts = [
@@ -24,14 +36,33 @@ class Debtor extends Model
         'arrears'     => 'decimal:2',
     ];
 
-    public function project(): BelongsTo { return $this->belongsTo(Project::class); }
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
-    public function repayments(): HasMany { return $this->hasMany(Repayment::class); }
-    public function latestDetail()
+    /** Relasi utama */
+    public function project(): BelongsTo
     {
-    // butuh tabel debtor_details; akan mengambil baris terakhir (id terbesar)
-    return $this->hasOne(\App\Models\DebtorDetail::class)->latestOfMany();
+        return $this->belongsTo(Project::class);
     }
-    // opsional: jika ada table details
-    public function details(): HasMany { return $this->hasMany(\App\Models\DebtorDetail::class); }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /** Cicilan (repayments) */
+    public function repayments(): HasMany
+    {
+        return $this->hasMany(Repayment::class, 'debtor_id');
+    }
+
+    /** Semua detail (jika tabel debtor_details ada) */
+    public function details(): HasMany
+    {
+        return $this->hasMany(\App\Models\DebtorDetail::class, 'debtor_id');
+    }
+
+    /** Satu detail terakhir (praktis dipakai kalau perlu yang terbaru saja) */
+    public function latestDetail(): HasOne
+    {
+        // Ambil baris dengan id terbesar sebagai yang terbaru
+        return $this->hasOne(\App\Models\DebtorDetail::class, 'debtor_id')->latestOfMany('id');
+    }
 }

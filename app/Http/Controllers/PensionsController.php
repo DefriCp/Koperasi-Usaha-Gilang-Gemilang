@@ -65,7 +65,6 @@ class PensionsController extends Controller
         return view('pensions.import');
     }
 
-    // ===== Import XLSX: map kolom tabel + sisanya masuk ke "extras" =====
     public function importStore(Request $r)
     {
     $r->validate([
@@ -81,20 +80,17 @@ class PensionsController extends Controller
 
     if (count($rows) < 2) return back()->withErrors(['file'=>'File kosong.']);
 
-    // simpan row header asli untuk "extras"
-    $headerRow = array_shift($rows);            // ['A'=>'NIP', 'B'=>'KODE_CABANG', ...]
+    $headerRow = array_shift($rows);
     $norm = fn($s)=> strtolower(trim(preg_replace('/\s+/', '_', (string)$s)));
 
-    // peta kolom header -> huruf kolom (pakai key normalized)
     $hdrNorm2Col = [];
     $hdrLabelByCol = [];
     foreach ($headerRow as $col => $label) {
         if ($label === null || $label === '') continue;
         $hdrNorm2Col[$norm($label)] = $col;
-        $hdrLabelByCol[$col] = (string)$label; // label asli untuk extras
+        $hdrLabelByCol[$col] = (string)$label;
     }
 
-    // mapping header (normalized) -> kolom tabel
     $fieldMap = [
         'nip'                    => 'nip',
         'nama_pensiunan'         => 'name', 'nama' => 'name',
@@ -127,7 +123,6 @@ class PensionsController extends Controller
         'bersih'                 => 'bersih',
     ];
 
-    // helper ambil col huruf dari header normalized
     $getCol = function(array $cands) use ($hdrNorm2Col) {
         foreach ((array)$cands as $n) if (isset($hdrNorm2Col[$n])) return $hdrNorm2Col[$n];
         return null;
@@ -136,23 +131,21 @@ class PensionsController extends Controller
     $inserted = 0; $updated = 0;
 
     foreach ($rows as $row) {
-        // value menurut label normalized (biar gampang diakses)
+
         $vals = [];
         foreach ($hdrNorm2Col as $hn => $col) $vals[$hn] = $row[$col] ?? null;
 
         $nip = trim((string)($vals['nip'] ?? ''));
         $name = trim((string)($vals['nama_pensiunan'] ?? $vals['nama'] ?? ''));
 
-        if ($nip === '' && $name === '') continue; // kosong
+        if ($nip === '' && $name === '') continue; 
         if ($nip === '') continue;
 
-        // payload utama (kolom tabel)
         $payload = [];
         foreach ($fieldMap as $hNorm => $dbCol) {
             if (!array_key_exists($hNorm,$vals)) continue;
             $val = $vals[$hNorm];
 
-            // normalisasi tipe untuk kolom tertentu
             if (in_array($dbCol, ['birth_date','tmt_pensiun','tanggal_skep'])) {
                 $payload[$dbCol] = $this->asDate($val);
             } elseif (in_array($dbCol, ['penpok','tunj_istri','tunj_anak','tunj_beras','penyesuaian','tunj_bulat','total_kotor','bersih'])) {
@@ -162,11 +155,9 @@ class PensionsController extends Controller
             }
         }
 
-        // wajib
         $payload['nip']  = $nip;
         $payload['name'] = $name ?: ($payload['name'] ?? null);
 
-        // kumpulkan "extras" = semua header yang tidak dipetakan
         $mappedCols = [];
         foreach ($fieldMap as $hNorm => $dbCol) {
             if (isset($hdrNorm2Col[$hNorm])) $mappedCols[] = $hdrNorm2Col[$hNorm];
@@ -175,13 +166,11 @@ class PensionsController extends Controller
         foreach ($row as $col => $val) {
             if (!in_array($col, $mappedCols, true)) {
                 $labelAsli = $hdrLabelByCol[$col] ?? $col;
-                // simpan apa adanya (string/angka/tanggal excel tetap kita simpan string)
                 $extras[$labelAsli] = is_string($val) ? trim($val) : $val;
             }
         }
         if ($extras) $payload['extras'] = $extras;
 
-        // upsert by NIP
         $exists = Pension::where('nip', $nip)->first();
         if ($exists) { $exists->update($payload); $updated++; }
         else         { Pension::create($payload); $inserted++; }

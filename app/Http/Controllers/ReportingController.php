@@ -20,7 +20,6 @@ class ReportingController extends Controller
 {
     public function index()
     {
-        // kamu bisa ganti ke view landing; untuk simpel arahkan ke Outstanding
         return redirect()->route('reporting.outstanding');
     }
 

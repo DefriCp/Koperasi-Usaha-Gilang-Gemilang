@@ -113,16 +113,13 @@ class ProjectController extends Controller
         } catch (\Throwable $e) {
             return back()->withErrors(['file' => 'Gagal baca Excel: '.$e->getMessage()]);
         }
-
-        // Cari kolom yang mengandung nama project/bank
         $rows  = $sheet->toArray(null, true, true, true);
         $first = min(1000, count($rows));
         $headers = [];
-        $targetCols = []; // kolom yang dianggap mengandung nama project
+        $targetCols = [];
 
         $candidates = ['PROJECT','PROJEK','NAMA PROJECT','KREDITUR','KREDITOR','PRODUK LOAN','BANK','KANTOR BAYAR','KANTOR BAYAR TUJUAN'];
 
-        // deteksi header
         foreach ($rows as $rIdx => $cols) {
             foreach ($cols as $col => $val) {
                 $text = $this->cleanStr($val);
@@ -137,7 +134,7 @@ class ProjectController extends Controller
                     }
                 }
             }
-            if ($rIdx >= 10) break; // cukup 10 baris pertama untuk header
+            if ($rIdx >= 10) break;
         }
         $targetCols = array_values(array_unique($targetCols));
 
@@ -148,7 +145,6 @@ class ProjectController extends Controller
         $created = 0; $skipped = 0; $updated = 0;
         $seen = [];
 
-        // mulai dari baris setelah header tertinggi
         $startRow = 2;
 
         foreach ($rows as $i => $cols) {
@@ -161,15 +157,12 @@ class ProjectController extends Controller
             }
             if ($value === '') { $skipped++; continue; }
 
-            // normalisasi nama (judul-case secukupnya)
             $name = trim($value);
             if (isset($seen[$this->upkey($name)])) { $skipped++; continue; }
             $seen[$this->upkey($name)] = true;
 
-            // cek existing case-insensitive
             $existing = Project::where('name','ILIKE',$name)->orWhere('name','ILIKE','%'.$name.'%')->first();
             if ($existing) {
-                // jika beda kapitalisasi, rapikan
                 if ($existing->name !== $name) {
                     $existing->update(['name' => $name]);
                     $updated++;
@@ -186,8 +179,6 @@ class ProjectController extends Controller
         return redirect()->route('projects.index')
             ->with('ok', "Import selesai: tambah {$created}, update {$updated}, lewati {$skipped}.");
     }
-
-    /* ======== Utility: hapus project tanpa relasi debitur ======== */
     public function purgeOrphans()
     {
         $this->authorizeChecker();

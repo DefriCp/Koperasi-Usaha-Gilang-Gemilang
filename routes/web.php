@@ -37,8 +37,6 @@ Route::middleware(['auth','verified'])->group(function () {
         Route::get   ('/projects/{project}/edit', [ProjectController::class,'edit'  ])->name('projects.edit');
         Route::put   ('/projects/{project}',      [ProjectController::class,'update'])->name('projects.update');
         Route::delete('/projects/{project}',      [ProjectController::class,'destroy'])->name('projects.destroy');
-
-        // Import project dari Excel (opsional)
         Route::get ('/projects/import',  [ProjectController::class,'importForm' ])->name('projects.import');
         Route::post('/projects/import',  [ProjectController::class,'importStore'])->name('projects.import.store');
     });
@@ -46,10 +44,8 @@ Route::middleware(['auth','verified'])->group(function () {
 
 // ===================== DEBTORS =====================
 Route::middleware(['auth','verified'])->group(function () {
-    // List
-    Route::get('/debtors', [DebtorController::class,'index'])->name('debtors.index');
 
-    // Create + Import + Delete + Edit (khusus inputer/checker)
+    Route::get('/debtors', [DebtorController::class,'index'])->name('debtors.index');
     Route::middleware('role:inputer|checker')->group(function () {
         Route::get ('/debtors/create',  [DebtorController::class,'create'     ])->name('debtors.create');
         Route::post('/debtors',         [DebtorController::class,'store'      ])->name('debtors.store');
@@ -57,17 +53,14 @@ Route::middleware(['auth','verified'])->group(function () {
         Route::get ('/debtors/import',  [DebtorController::class,'importForm' ])->name('debtors.import');
         Route::post('/debtors/import',  [DebtorController::class,'importStore'])->name('debtors.import.store');
 
-        // EDIT / UPDATE
         Route::get ('/debtors/{debtor}/edit', [DebtorController::class,'edit'])
             ->whereNumber('debtor')->name('debtors.edit');
         Route::put ('/debtors/{debtor}',      [DebtorController::class,'update'])
             ->whereNumber('debtor')->name('debtors.update');
 
-        // Hapus debitur
         Route::delete('/debtors/{debtor}', [DebtorController::class,'destroy'])
             ->whereNumber('debtor')->name('debtors.destroy');
 
-        // Rollback batch import (opsional)
         Route::delete('/debtors/import/rollback/{batch}', [DebtorController::class,'rollbackImport'])
             ->name('debtors.import.rollback');
     });

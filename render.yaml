@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: kugg-laravel
+    env: docker
+    plan: free
+    region: singapore
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        generateValue: true
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kugg-db
+          property: connectionString
+
+databases:
+  - name: kugg
+    databaseName: kugg
+    plan: free
+    user: kugg_user

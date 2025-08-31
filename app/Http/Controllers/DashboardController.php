@@ -70,12 +70,12 @@ class DashboardController extends Controller
 
         $totalDebitur = Debtor::count();
 
-        // Outstanding = sum(amount_due - amount_paid) seluruh rows (yang belum lunas)
+        // Outstanding 
         $outstanding = (float) Repayment::query()
             ->selectRaw('SUM(amount_due - amount_paid) as os')
             ->value('os');
 
-        // Pembayaran bulan ini = sum(amount_paid) dengan paid_date bulan berjalan & status PAID
+        // Pembayaran 
         $pembayaranBulanIni = (float) Repayment::query()
             ->where('status','PAID')
             ->whereNotNull('paid_date')
@@ -89,7 +89,7 @@ class DashboardController extends Controller
             ->whereYear('period_date', $now->year)
             ->sum('amount_due');
 
-        // Tunggakan = kewajiban bulan ini - pembayaran bulan ini (tidak minus)
+        // Tunggakan = kewajiban bulan ini
         $tunggakan = max(0, $kewajibanBulanIni - $pembayaranBulanIni);
 
         $stats = [
