@@ -14,7 +14,7 @@ fi
 
 php artisan storage:link || true
 
-if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:e2XU/QfBDGI7mE4A9YWYLtoxpbp4kckkOZpPOXcYknk=" ]; then
+if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
   echo "Generating APP_KEY..."
   php artisan key:generate --force
 fi
