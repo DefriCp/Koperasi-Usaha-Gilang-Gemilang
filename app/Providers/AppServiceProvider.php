@@ -4,27 +4,27 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Routing\UrlGenerator;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
+
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
+ 
+    public function boot(UrlGenerator $url): void
     {
 
-        $forwardedProtoIsHttps = request()->header('X-Forwarded-Proto') === 'https';
-
-        if ($forwardedProtoIsHttps || request()->isSecure() || env('FORCE_HTTPS', false)) {
-            URL::forceScheme('https');
+        if (
+            app()->environment('production') ||
+            request()->header('X-Forwarded-Proto') === 'https' ||
+            env('FORCE_HTTPS', false)
+        ) {
+            $url->forceScheme('https');
+            URL::forceScheme('https'); // optional; salah satu juga cukup
         }
     }
 }

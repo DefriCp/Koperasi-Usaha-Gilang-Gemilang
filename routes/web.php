@@ -89,12 +89,19 @@ Route::middleware(['auth','verified'])->group(function () {
     Route::get('/payments',        [PaymentsController::class, 'index'  ])->name('payments.index');
     Route::get('/payments/export', [PaymentsController::class, 'export' ])->name('payments.export');
 
-    // approve / reject oleh CHECKER
+    // edit manual per baris
+    Route::middleware('role:inputer|checker')->group(function () {
+        Route::put('/repayments/{repayment}', [PaymentsController::class, 'update'])
+            ->whereNumber('repayment')->name('repayments.update');
+    });
+
+    // approve / reject oleh CHECKER (fitur lama)
     Route::middleware('role:checker')->group(function () {
         Route::post('/repayments/{repayment}/approve', [PaymentsController::class, 'approve'])->name('repayments.approve');
         Route::post('/repayments/{repayment}/reject',  [PaymentsController::class, 'reject' ])->name('repayments.reject');
     });
 });
+
 
 // ===================== REPORTING =====================
 Route::middleware(['auth','verified'])->group(function () {

@@ -34,4 +34,10 @@ class Repayment extends Model
     {
         return $this->belongsTo(Debtor::class);
     }
+    public function isPaid(): bool
+    {
+        $s = strtolower((string) $this->status);
+        return in_array($s, ['lunas','paid','paid_out','paidout','paid-full','paid_full','paidfull','paid.','paid '] , true)
+            || strtoupper((string)$this->status) === 'PAID';
+    }
 }

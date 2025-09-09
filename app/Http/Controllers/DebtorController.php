@@ -785,23 +785,55 @@ class DebtorController extends Controller
         }
 
         $seqBase = $paidNo + 1;
+        $today   = Carbon::today();
 
         // dekorasi: tambahkan properti yang dipakai Blade
-        return $rows->values()->map(function($r,$k) use($tenor,$paidNo,$amount,$seqBase){
-            $total = (float)($r->amount_due ?? $amount);
+        return $rows->values()->map(function($r,$k) use($tenor,$paidNo,$amount,$seqBase,$today){
+            $dueDate = $r->period_date instanceof \DateTimeInterface
+                        ? Carbon::parse($r->period_date->format('Y-m-d'))
+                        : Carbon::parse((string)$r->period_date);
+
+            $due   = (float)($r->amount_due ?? $amount);
+            $paid  = (float)($r->amount_paid ?? 0);
+            $stat  = strtoupper((string)($r->status ?? ''));
+
+            // lunas jika status PAID/LUNAS atau amount_paid >= amount_due
+            $isPaid = ($stat === 'PAID' || $stat === 'LUNAS' || $paid >= $due);
+
+            // cari tanggal bayar dari berbagai kemungkinan kolom
+            $paidAt = null;
+            foreach (['paid_at','paid_date','debit_date','debet_date','tgl_debet','payment_date'] as $attr) {
+                if (isset($r->$attr) && $r->$attr) { $paidAt = Carbon::parse($r->$attr); break; }
+            }
+
+            $isLatePaid = $isPaid && $paidAt && $paidAt->gt($dueDate);
+            $isOverdue  = !$isPaid && $dueDate->lt($today);
+
+            // label status untuk ditampilkan di tabel
+            $statusLabel = $isLatePaid ? 'TELAT BAYAR' : ($isPaid ? 'LUNAS' : ($isOverdue ? 'MENUNGGAK' : null));
+
             $beforeOutstanding = max(0, ($tenor - ($paidNo + $k)) * $amount);
+
+            // jika lunas, tampilkan 0 di pokok/total; jika telat/menunggak tetap angka,
+            // tapi di blade kita ganti tampilannya dengan teks label
+            $pokok = $isPaid ? 0.0 : $due;
+            $bunga = 0.0;
+            $adm   = 0.0;
+            $total = $isPaid ? 0.0 : ($pokok + $bunga + $adm);
 
             return (object)[
                 'seq'         => $seqBase + $k,
-                'period_date' => ($r->period_date instanceof \DateTimeInterface)
-                                    ? $r->period_date->format('Y-m-d')
-                                    : (string)$r->period_date,
+                'period_date' => $dueDate->format('Y-m-d'),
                 'outstanding' => $beforeOutstanding,
-                'pokok'       => $total,   // simplifikasi
-                'bunga'       => 0.0,
-                'adm'         => 0.0,
+                'pokok'       => $pokok,
+                'bunga'       => $bunga,
+                'adm'         => $adm,
                 'total'       => $total,
                 'is_prepaid'  => $k < $paidNo,
+                'is_paid'     => $isPaid,
+                'is_late'     => $isLatePaid,
+                'is_overdue'  => $isOverdue,
+                'status_label'=> $statusLabel,
                 'status'      => $r->status ?? 'UNPAID',
             ];
         });
@@ -840,14 +872,20 @@ class DebtorController extends Controller
 
     private function recalcSummaryFromRepayments(Debtor $debtor): void
     {
-        $today = Carbon::now()->startOfDay();
-        $rows = Repayment::where('debtor_id', $debtor->id)->get(['period_date','amount_due','amount_paid','status']);
+        $today = \Carbon\Carbon::now()->startOfDay();
+        $rows = \App\Models\Repayment::where('debtor_id', $debtor->id)
+            ->get(['period_date','amount_due','amount_paid','status']);
 
         $outstanding = 0.0; $arrears = 0.0;
         foreach ($rows as $r) {
             $remain = max(0, (float)$r->amount_due - (float)$r->amount_paid);
             $outstanding += $remain;
-            if ($r->status !== 'PAID' && Carbon::parse($r->period_date)->lt($today)) $arrears += $remain;
+
+            $st = strtolower((string)$r->status);
+            $isPaid = ($st === 'lunas') || (strtoupper((string)$r->status) === 'PAID');
+            if (!$isPaid && \Carbon\Carbon::parse($r->period_date)->lt($today)) {
+                $arrears += $remain;
+            }
         }
 
         $debtor->update(['outstanding'=>$outstanding,'arrears'=>$arrears]);

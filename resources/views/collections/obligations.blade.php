@@ -7,6 +7,7 @@
 
   @php
     $monthNames = [1=>'January','February','March','April','May','June','July','August','September','October','November','December'];
+    $isAll = ($month === 'all');
   @endphp
 
   <div class="py-8 max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -16,15 +17,16 @@
         <div class="md:col-span-6">
           <label class="block text-sm font-semibold text-gray-800 mb-1">Bulan</label>
           <select name="month" class="h-11 w-full rounded-lg border border-gray-300 px-3">
-            @foreach($monthNames as $i=>$label)
-              <option value="{{ $i }}" @selected($i==(int)$month)>{{ $label }}</option>
+            <option value="all" {{ $isAll ? 'selected' : '' }}>Semua Bulan</option>
+            @foreach($monthNames as $i => $label)
+              <option value="{{ $i }}" {{ (!$isAll && (int)$month === (int)$i) ? 'selected' : '' }}>{{ $label }}</option>
             @endforeach
           </select>
         </div>
         <div class="md:col-span-4">
           <label class="block text-sm font-semibold text-gray-800 mb-1">Tahun</label>
           <input type="number" name="year" value="{{ $year }}"
-                 class="h-11 w-full rounded-lg border border-gray-300 px-3">
+                 class="h-11 w-full rounded-lg border border-gray-300 px-3" min="2000" max="2100">
         </div>
         <div class="md:col-span-2 flex items-end">
           <button class="h-11 px-4 rounded-lg border border-gray-300 text-gray-900 font-semibold bg-white hover:bg-gray-50">
@@ -41,6 +43,9 @@
           <thead class="bg-gray-50">
             <tr class="text-gray-900">
               <th class="px-4 py-3 text-left font-semibold">No</th>
+              @if($isAll)
+                <th class="px-4 py-3 text-left font-semibold">Bulan</th>
+              @endif
               <th class="px-4 py-3 text-left font-semibold">Kode Mitra</th>
               <th class="px-4 py-3 text-left font-semibold">Nama Mitra</th>
               <th class="px-4 py-3 text-left font-semibold">No. Rekening</th>
@@ -55,6 +60,9 @@
           @forelse($rows as $r)
             <tr class="hover:bg-gray-50">
               <td class="px-4 py-3 text-gray-700">{{ $no++ }}</td>
+              @if($isAll)
+                <td class="px-4 py-3 text-gray-900">{{ $r->month_name }}</td>
+              @endif
               <td class="px-4 py-3 text-gray-900">{{ $r->loan_number }}</td>
               <td class="px-4 py-3 text-gray-900">{{ $r->project_name }}</td>
               <td class="px-4 py-3 text-gray-900">{{ $r->account_number }}</td>
@@ -64,8 +72,8 @@
             </tr>
           @empty
             <tr>
-              <td colspan="7" class="px-4 py-10 text-center text-gray-600 font-medium">
-                Tidak ada data untuk {{ $monthNames[(int)$month] }} {{ $year }}.
+              <td colspan="{{ $isAll ? 8 : 7 }}" class="px-4 py-10 text-center text-gray-600 font-medium">
+                Tidak ada data untuk {{ $isAll ? 'Semua Bulan' : $monthNames[(int)$month] }} {{ $year }}.
               </td>
             </tr>
           @endforelse

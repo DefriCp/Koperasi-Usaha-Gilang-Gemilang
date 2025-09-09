@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Models\Repayment;
 use App\Models\Debtor;
 
@@ -13,15 +12,9 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if ($user->hasRole('checker')) {
-            return redirect()->route('dashboard.checker');
-        }
-        if ($user->hasRole('inputer')) {
-            return redirect()->route('dashboard.inputer');
-        }
-        if ($user->hasRole('viewer')) {
-            return redirect()->route('dashboard.viewer');
-        }
+        if ($user->hasRole('checker')) return redirect()->route('dashboard.checker');
+        if ($user->hasRole('inputer')) return redirect()->route('dashboard.inputer');
+        if ($user->hasRole('viewer'))  return redirect()->route('dashboard.viewer');
 
         return view('dashboard.blank');
     }
@@ -32,26 +25,25 @@ class DashboardController extends Controller
 
         $totalDebitur = Debtor::count();
 
-        // Outstanding = sum(amount_due - amount_paid) seluruh rows (yang belum lunas)
         $outstanding = (float) Repayment::query()
-            ->selectRaw('SUM(amount_due - amount_paid) as os')
+            ->selectRaw('SUM(GREATEST(COALESCE(amount_due,0) - COALESCE(amount_paid,0),0)) as os')
             ->value('os');
 
-        // Pembayaran bulan ini = sum(amount_paid) dengan paid_date bulan berjalan & status PAID
+        // Pembayaran bulan ini: status PAID atau LUNAS
         $pembayaranBulanIni = (float) Repayment::query()
-            ->where('status','PAID')
             ->whereNotNull('paid_date')
             ->whereMonth('paid_date', $now->month)
             ->whereYear('paid_date', $now->year)
+            ->where(function($q){
+                $q->where('status','PAID')->orWhere('status','LUNAS');
+            })
             ->sum('amount_paid');
 
-        // Kewajiban bulan ini
         $kewajibanBulanIni = (float) Repayment::query()
             ->whereMonth('period_date', $now->month)
             ->whereYear('period_date', $now->year)
             ->sum('amount_due');
 
-        // Tunggakan = kewajiban bulan ini - pembayaran bulan ini (tidak minus)
         $tunggakan = max(0, $kewajibanBulanIni - $pembayaranBulanIni);
 
         $stats = [
@@ -70,26 +62,24 @@ class DashboardController extends Controller
 
         $totalDebitur = Debtor::count();
 
-        // Outstanding 
         $outstanding = (float) Repayment::query()
-            ->selectRaw('SUM(amount_due - amount_paid) as os')
+            ->selectRaw('SUM(GREATEST(COALESCE(amount_due,0) - COALESCE(amount_paid,0),0)) as os')
             ->value('os');
 
-        // Pembayaran 
         $pembayaranBulanIni = (float) Repayment::query()
-            ->where('status','PAID')
             ->whereNotNull('paid_date')
             ->whereMonth('paid_date', $now->month)
             ->whereYear('paid_date', $now->year)
+            ->where(function($q){
+                $q->where('status','PAID')->orWhere('status','LUNAS');
+            })
             ->sum('amount_paid');
 
-        // Kewajiban bulan ini
         $kewajibanBulanIni = (float) Repayment::query()
             ->whereMonth('period_date', $now->month)
             ->whereYear('period_date', $now->year)
             ->sum('amount_due');
 
-        // Tunggakan = kewajiban bulan ini
         $tunggakan = max(0, $kewajibanBulanIni - $pembayaranBulanIni);
 
         $stats = [

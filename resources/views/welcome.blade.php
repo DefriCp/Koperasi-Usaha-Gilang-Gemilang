@@ -1,3 +1,4 @@
+{{-- resources/views/welcome.blade.php --}}
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -5,12 +6,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>KSU Gilang Gemilang — LOS</title>
   @vite(['resources/css/app.css','resources/js/app.js'])
+
+  {{-- Patch: pastikan elemen dekorasi tidak menghalangi klik --}}
+  <style>
+    .hero-wave::before,
+    .hero-wave::after { pointer-events: none !important; }
+  </style>
 </head>
 <body
   class="antialiased text-brand-ink
          bg-stone-100
-         bg-[radial-gradient(1200px_620px_at_18%_0%,#f2ede7_0%,transparent_70%)]
-">
+         bg-[radial-gradient(1200px_620px_at_18%_0%,#f2ede7_0%,transparent_70%)]">
 
   {{-- NAVBAR --}}
   <header class="sticky top-0 z-30 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-100">
@@ -30,9 +36,10 @@
   </header>
 
   {{-- HERO --}}
-  <section class="hero-wave">
+  <section class="hero-wave relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20 grid md:grid-cols-12 gap-10">
-      <div class="md:col-span-7">
+      {{-- KONTEN KIRI (dibikin di atas layer dekorasi) --}}
+      <div class="md:col-span-7 relative z-10">
         <div class="brand-bar mb-6"></div>
         <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight text-brand-ink">
           WELCOME TO <span class="text-brand-orange">OUR COMPANY</span>
@@ -50,35 +57,37 @@
         </div>
 
         <div class="mt-8 flex flex-wrap gap-3">
+          {{-- Masuk Aplikasi -> login --}}
           <a href="{{ route('login') }}" class="btn-brand">Masuk Aplikasi</a>
-          <a href="mailto:gilanggemilang.kp@gmail.com" class="btn-ghost">Hubungi Kami</a>
+          {{-- Hubungi Kami -> mailto --}}
+          <a
+            href="mailto:gilanggemilang.kp@gmail.com?subject=Pertanyaan%20dari%20Website%20KU%20GG&body=Halo%20KU%20GG,%0D%0A"
+            class="btn-ghost"
+          >Hubungi Kami</a>
         </div>
       </div>
 
-      {{-- Ilustrasi vektor: kotak gradien + logo KU GG di tengah --}}
-      <div class="md:col-span-5 relative">
-        {{-- dot dekor atas --}}
-        <div class="absolute -top-6 -right-2 w-28 h-28 dot-grid rounded-xl opacity-60"></div>
+      {{-- Ilustrasi kanan --}}
+      <div class="md:col-span-5 relative z-0">
+        {{-- dot dekor atas (tidak menangkap klik) --}}
+        <div class="absolute -top-6 -right-2 w-28 h-28 dot-grid rounded-xl opacity-60 pointer-events-none"></div>
 
         <div
           class="relative aspect-[4/3] rounded-3xl shadow-soft
                  bg-gradient-to-br from-brand-orange to-amber-300
-                 ring-1 ring-black/5 grid place-items-center overflow-hidden"
-        >
-          {{-- subtle glow di belakang logo --}}
-          <div class="absolute h-40 w-40 md:h-64 md:w-64 rounded-full bg-white/20 blur-3xl"></div>
+                 ring-1 ring-black/5 grid place-items-center overflow-hidden">
+          {{-- glow belakang logo (tidak menangkap klik) --}}
+          <div class="absolute h-40 w-40 md:h-64 md:w-64 rounded-full bg-white/20 blur-3xl pointer-events-none"></div>
 
-          {{-- LOGO KU GG (besar & responsif) --}}
           <img
             src="{{ asset('img/LOGO-GG.png') }}"
             alt="KSU Gilang Gemilang"
             class="relative h-44 w-44 md:h-56 md:w-56 lg:h-64 lg:w-64
-                   object-contain drop-shadow-xl select-none pointer-events-none"
-          />
+                   object-contain drop-shadow-xl select-none pointer-events-none" />
         </div>
 
-        {{-- dot dekor bawah --}}
-        <div class="absolute -bottom-8 -left-6 w-24 h-24 rounded-xl dot-grid opacity-60"></div>
+        {{-- dot dekor bawah (tidak menangkap klik) --}}
+        <div class="absolute -bottom-8 -left-6 w-24 h-24 rounded-xl dot-grid opacity-60 pointer-events-none"></div>
       </div>
     </div>
   </section>
@@ -151,7 +160,7 @@
       <h2 class="text-2xl md:text-3xl font-extrabold text-brand-ink">INFORMASI KREDIT PENSIUN</h2>
       <div class="brand-bar my-4"></div>
 
-      <div class="grid md:grid-cols-12 gap-6">
+    <div class="grid md:grid-cols-12 gap-6">
         <div class="md:col-span-7 card p-6 reveal">
           <ul class="space-y-2 text-gray-700 list-disc list-inside">
             <li>Verifikasi & otentikasi penerima manfaat pensiun</li>
@@ -215,11 +224,11 @@
     </div>
   </section>
 
-  {{-- FOOTER / CONTACT --}}
+  {{-- FOOTER --}}
   <footer class="bg-brand-ink text-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid sm:grid-cols-2 gap-6">
       <div>
-        <div class="text-2xl font-extrabold">KSU Gilang Gemilang</div>
+        <div class="text-2xl font-extrabold">Koperasi Usaha Gilang Gemilang</div>
         <p class="mt-2 text-white/80 text-sm leading-6">
           Kantor Pusat Operasional: JL. H Terin No. 15, Kel. Pangakalan, Jati Baru, Kec. Cinere, Kota Depok 16514
         </p>

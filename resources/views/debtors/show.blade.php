@@ -41,7 +41,7 @@
               </button>
             </form>
           @endif
-        @endrole
+        @endrole>
 
         @role('inputer|checker')
           <form method="POST" action="{{ route('debtors.destroy', $debtor) }}"
@@ -133,7 +133,7 @@
       </div>
     </div>
 
-    {{-- DETAIL DEBITUR (data yang diinput saat tambah) --}}
+    {{-- DETAIL DEBITUR --}}
     <div class="rounded-xl bg-white shadow-sm border border-gray-200">
       <div class="px-5 py-4 border-b border-gray-100">
         <h3 class="text-lg font-semibold text-gray-900">Detail Debitur</h3>
@@ -264,7 +264,10 @@
         <div>
           <h3 class="text-lg font-semibold text-gray-900">Payment Schedule</h3>
           <p class="text-xs text-gray-500 mt-1">
-            Baris berwarna kuning = angsuran yang sudah dibayar di muka (0).
+            <span class="font-semibold text-amber-700">Kuning</span> = dibayar di muka (0).<br>
+            <span class="font-semibold text-emerald-700">Hijau</span> = <b>LUNAS</b> (tepat waktu).<br>
+            <span class="font-semibold text-orange-700">Oranye</span> = <b>TELAT BAYAR</b> (bayar setelah jatuh tempo).<br>
+            <span class="font-semibold text-rose-700">Merah muda</span> = <b>MENUNGGAK</b> (belum bayar & sudah lewat jatuh tempo).
           </p>
         </div>
         <div class="text-sm text-gray-500">
@@ -290,16 +293,25 @@
               @foreach ($rows as $r)
                 @php
                   $d = \Carbon\Carbon::parse($r->period_date)->translatedFormat('d F Y');
-                  $rowClass = $r->is_prepaid ? 'bg-amber-50' : 'hover:bg-gray-50';
+                  $rowClass = $r->is_late ? 'bg-orange-50'
+                             : ($r->is_overdue ? 'bg-rose-50'
+                             : ($r->is_paid ? 'bg-emerald-50'
+                             : ($r->is_prepaid ? 'bg-amber-50' : 'hover:bg-gray-50')));
                 @endphp
                 <tr class="{{ $rowClass }}">
                   <td class="px-4 py-3 text-gray-900">{{ $r->seq }}</td>
                   <td class="px-4 py-3 text-gray-900">{{ $d }}</td>
                   <td class="px-4 py-3 text-right text-gray-900">{{ $money($r->outstanding) }}</td>
-                  <td class="px-4 py-3 text-right text-gray-900">{{ $money($r->pokok) }}</td>
+
+                  {{-- Jika ada label status (LUNAS / TELAT BAYAR / MENUNGGAK) tampilkan label; else tampil angka --}}
+                  <td class="px-4 py-3 text-right text-gray-900">
+                    {{ $r->status_label ? $r->status_label : $money($r->pokok) }}
+                  </td>
                   <td class="px-4 py-3 text-right text-gray-900">{{ $money($r->bunga) }}</td>
                   <td class="px-4 py-3 text-right text-gray-900">{{ $money($r->adm) }}</td>
-                  <td class="px-4 py-3 text-right font-semibold text-gray-900">{{ $money($r->total) }}</td>
+                  <td class="px-4 py-3 text-right font-semibold text-gray-900">
+                    {{ $r->status_label ? $r->status_label : $money($r->total) }}
+                  </td>
                 </tr>
               @endforeach
             </tbody>
