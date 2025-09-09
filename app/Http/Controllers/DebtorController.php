@@ -761,8 +761,6 @@ class DebtorController extends Controller
 
         return $date ? Carbon::parse($date) : null;
     }
-
-    /** Buat / dekorasi baris schedule agar cocok dengan kolom di Blade */
     private function buildScheduleRows(Debtor $debtor)
     {
         $rows = Repayment::where('debtor_id',$debtor->id)->orderBy('period_date')->get();
@@ -772,7 +770,6 @@ class DebtorController extends Controller
         $paidNo = max(0, (int) $debtor->installment_no);
         $amount = (float) $debtor->installment;
 
-        // kalau DB kosong, generate jadwalnya
         if ($rows->isEmpty() && $tenor && $amount) {
             for ($i = $paidNo; $i < $tenor; $i++) {
                 $rows->push((object)[
@@ -787,7 +784,6 @@ class DebtorController extends Controller
         $seqBase = $paidNo + 1;
         $today   = Carbon::today();
 
-        // dekorasi: tambahkan properti yang dipakai Blade
         return $rows->values()->map(function($r,$k) use($tenor,$paidNo,$amount,$seqBase,$today){
             $dueDate = $r->period_date instanceof \DateTimeInterface
                         ? Carbon::parse($r->period_date->format('Y-m-d'))
@@ -797,10 +793,8 @@ class DebtorController extends Controller
             $paid  = (float)($r->amount_paid ?? 0);
             $stat  = strtoupper((string)($r->status ?? ''));
 
-            // lunas jika status PAID/LUNAS atau amount_paid >= amount_due
             $isPaid = ($stat === 'PAID' || $stat === 'LUNAS' || $paid >= $due);
 
-            // cari tanggal bayar dari berbagai kemungkinan kolom
             $paidAt = null;
             foreach (['paid_at','paid_date','debit_date','debet_date','tgl_debet','payment_date'] as $attr) {
                 if (isset($r->$attr) && $r->$attr) { $paidAt = Carbon::parse($r->$attr); break; }
@@ -809,13 +803,10 @@ class DebtorController extends Controller
             $isLatePaid = $isPaid && $paidAt && $paidAt->gt($dueDate);
             $isOverdue  = !$isPaid && $dueDate->lt($today);
 
-            // label status untuk ditampilkan di tabel
             $statusLabel = $isLatePaid ? 'TELAT BAYAR' : ($isPaid ? 'LUNAS' : ($isOverdue ? 'MENUNGGAK' : null));
 
             $beforeOutstanding = max(0, ($tenor - ($paidNo + $k)) * $amount);
 
-            // jika lunas, tampilkan 0 di pokok/total; jika telat/menunggak tetap angka,
-            // tapi di blade kita ganti tampilannya dengan teks label
             $pokok = $isPaid ? 0.0 : $due;
             $bunga = 0.0;
             $adm   = 0.0;
