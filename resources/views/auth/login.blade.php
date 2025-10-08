@@ -104,7 +104,7 @@
   <main class="layout">
     <!-- LEFT: Slideshow -->
     <section class="left" aria-hidden="true">
-      <div class="hero" id="hero" style="background-image:url('{{ asset('img/bg.png') }}')"></div>
+      <div class="hero" id="hero" style="background-image:url('{{ asset('img/bg2.png') }}')"></div>
       <div class="logo-ribbon">
         <img src="{{ asset('img/LOGO-GG.png') }}" alt="Logo KSU GG" />
         <strong style="color:#0f2e4e">KSU Gilang Gemilang</strong>
@@ -174,7 +174,7 @@
       const el = document.getElementById('hero');
       const slides = [
         "{{ asset('img/bg.png') }}",
-        "{{ asset('img/anggota.jpg') }}",
+        "{{ asset('img/bg2.png') }}",
       ];
       let i = 0;
       setInterval(()=>{
