@@ -7,7 +7,7 @@
 
   @once
     <style>
-      .u-input { height: 2.875rem; } /* h-11 */
+      .u-input { height: 2.875rem; }
       input[type=number].u-input::-webkit-outer-spin-button,
       input[type=number].u-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       input[type=number].u-input { -moz-appearance: textfield; }
@@ -98,6 +98,7 @@
         <div class="mt-6 border border-slate-300 dark:border-slate-600 rounded-2xl overflow-hidden">
           <div class="{{ $section }}">B. Data Debitur</div>
           <div class="{{ $box }}">
+
             <div class="grid md:grid-cols-12 gap-3 items-center">
               <label class="{{ $label }}">9) Nama</label>
               <input name="name" value="{{ old('name') }}" class="{{ $input }} {{ $field }}" required>
@@ -147,6 +148,13 @@
               <label class="{{ $label }}">13) Plafond (Rp)</label>
               <input type="number" step="1" min="0" name="plafond" value="{{ old('plafond') }}" class="{{ $input }} {{ $field }}" required>
               @error('plafond') <div class="md:col-start-5 md:col-span-8 text-rose-300 text-sm">{{ $message }}</div> @enderror
+            </div>
+
+            {{-- Gaji pensiun (TAMBAHAN) --}}
+            <div class="grid md:grid-cols-12 gap-3 items-center">
+              <label class="{{ $label }}">Gaji Pensiun (Rp)</label>
+              <input type="number" step="1" min="0" name="gaji_pensiun" value="{{ old('gaji_pensiun') }}" class="{{ $input }} {{ $field }}" required>
+              @error('gaji_pensiun') <div class="md:col-start-5 md:col-span-8 text-rose-300 text-sm">{{ $message }}</div> @enderror
             </div>
 
             <div class="grid md:grid-cols-3 gap-4">

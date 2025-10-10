@@ -120,6 +120,7 @@ Route::middleware(['auth','verified'])->group(function () {
     Route::get('/pensions/create',         [PensionsController::class,'create'])->name('pensions.create');
     Route::post('/pensions',               [PensionsController::class,'store'])->name('pensions.store');
     Route::get('/pensions/{pension}/edit', [PensionsController::class,'edit'])->name('pensions.edit');
+    Route::get('/pensions/{pension}',      [PensionsController::class,'show'])->name('pensions.show');
     Route::put('/pensions/{pension}',      [PensionsController::class,'update'])->name('pensions.update');
     Route::delete('/pensions/{pension}',   [PensionsController::class,'destroy'])->name('pensions.destroy');
 

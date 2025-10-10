@@ -67,145 +67,150 @@ class PensionsController extends Controller
 
     public function importStore(Request $r)
     {
-    $r->validate([
-        'file' => ['required','file','max:20480', function($attr,$file,$fail){
-            $ext = strtolower($file->getClientOriginalExtension() ?: '');
-            if (!in_array($ext, ['xlsx','xls','csv'])) $fail('File harus xlsx/xls/csv');
-        }],
-    ]);
+        $r->validate([
+            'file' => ['required','file','max:20480', function($attr,$file,$fail){
+                $ext = strtolower($file->getClientOriginalExtension() ?: '');
+                if (!in_array($ext, ['xlsx','xls','csv'])) $fail('File harus xlsx/xls/csv');
+            }],
+        ]);
 
-    $spreadsheet = IOFactory::load($r->file('file')->getRealPath());
-    $sheet = $spreadsheet->getActiveSheet();
-    $rows = $sheet->toArray(null, true, true, true);
+        $spreadsheet = IOFactory::load($r->file('file')->getRealPath());
+        $sheet = $spreadsheet->getActiveSheet();
+        $rows = $sheet->toArray(null, true, true, true);
 
-    if (count($rows) < 2) return back()->withErrors(['file'=>'File kosong.']);
+        if (count($rows) < 2) return back()->withErrors(['file'=>'File kosong.']);
 
-    $headerRow = array_shift($rows);
-    $norm = fn($s)=> strtolower(trim(preg_replace('/\s+/', '_', (string)$s)));
+        $headerRow = array_shift($rows);
+        $norm = fn($s)=> strtolower(trim(preg_replace('/\s+/', '_', (string)$s)));
 
-    $hdrNorm2Col = [];
-    $hdrLabelByCol = [];
-    foreach ($headerRow as $col => $label) {
-        if ($label === null || $label === '') continue;
-        $hdrNorm2Col[$norm($label)] = $col;
-        $hdrLabelByCol[$col] = (string)$label;
-    }
+        $hdrNorm2Col = [];
+        $hdrLabelByCol = [];
+        foreach ($headerRow as $col => $label) {
+            if ($label === null || $label === '') continue;
+            $hdrNorm2Col[$norm($label)] = $col;
+            $hdrLabelByCol[$col] = (string)$label;
+        }
 
-    $fieldMap = [
-        'nip'                    => 'nip',
-        'nama_pensiunan'         => 'name', 'nama' => 'name',
-        'no_ktp'                 => 'ktp','ktp'=>'ktp',
-        'npwp'                   => 'npwp',
-        'alamat'                 => 'address_line1',
-        'nama_dati4'             => 'address_line2',
-        'nama_dati2'             => 'address_line3',
-        'telepon'                => 'phone','no_telepon'=>'phone','phone'=>'phone',
-        'no_hp'                  => 'phone_alt','hp'=>'phone_alt',
-        'tgl_lahir_pensiunan'    => 'birth_date','tanggal_lahir'=>'birth_date','tgl_lahir'=>'birth_date',
-        'kode_cabang'            => 'branch_code',
-        'nama_cabang'            => 'branch_name',
-        'kode_jenis_pensiun'     => 'jenis_pensiun_code',
-        'nama_jenis_pensiun'     => 'jenis_pensiun_name',
-        'kode_jiwa'              => 'kode_jiwa',
-        'nomor_skep'             => 'nomor_skep',
-        'tmt_pensiun'            => 'tmt_pensiun',
-        'tanggal_skep'           => 'tanggal_skep',
-        'kode_juru_bayar'        => 'payer_code',
-        'nama_juru_bayar'        => 'payer_name',
-        'no_rekening'            => 'account_number',
-        'penpok'                 => 'penpok',
-        'tunjangan_istri'        => 'tunj_istri','tunj_istri'=>'tunj_istri',
-        'tunjangan_anak'         => 'tunj_anak','tunj_anak'=>'tunj_anak',
-        'tunjangan_beras'        => 'tunj_beras','tunj_beras'=>'tunj_beras',
-        'penyesuaian'            => 'penyesuaian',
-        'tunjangan_bulat'        => 'tunj_bulat','tunj_bulat'=>'tunj_bulat',
-        'total_kotor'            => 'total_kotor',
-        'bersih'                 => 'bersih',
-    ];
+        $fieldMap = [
+            'nip'                    => 'nip',
+            'nama_pensiunan'         => 'name', 'nama' => 'name',
+            'no_ktp'                 => 'ktp','ktp'=>'ktp',
+            'npwp'                   => 'npwp',
+            'alamat'                 => 'address_line1',
+            'nama_dati4'             => 'address_line2',
+            'nama_dati2'             => 'address_line3',
+            'telepon'                => 'phone','no_telepon'=>'phone','phone'=>'phone',
+            'no_hp'                  => 'phone_alt','hp'=>'phone_alt',
+            'tgl_lahir_pensiunan'    => 'birth_date','tanggal_lahir'=>'birth_date','tgl_lahir'=>'birth_date',
+            'kode_cabang'            => 'branch_code',
+            'nama_cabang'            => 'branch_name',
+            'kode_jenis_pensiun'     => 'jenis_pensiun_code',
+            'nama_jenis_pensiun'     => 'jenis_pensiun_name',
+            'kode_jiwa'              => 'kode_jiwa',
+            'nomor_skep'             => 'nomor_skep',
+            'tmt_pensiun'            => 'tmt_pensiun',
+            'tanggal_skep'           => 'tanggal_skep',
+            'kode_juru_bayar'        => 'payer_code',
+            'nama_juru_bayar'        => 'payer_name',
+            'no_rekening'            => 'account_number',
+            'penpok'                 => 'penpok',
+            'tunjangan_istri'        => 'tunj_istri','tunj_istri'=>'tunj_istri',
+            'tunjangan_anak'         => 'tunj_anak','tunj_anak'=>'tunj_anak',
+            'tunjangan_beras'        => 'tunj_beras','tunj_beras'=>'tunj_beras',
+            'penyesuaian'            => 'penyesuaian',
+            'tunjangan_bulat'        => 'tunj_bulat','tunj_bulat'=>'tunj_bulat',
+            'total_kotor'            => 'total_kotor',
+            'bersih'                 => 'bersih',
+        ];
 
-    $getCol = function(array $cands) use ($hdrNorm2Col) {
-        foreach ((array)$cands as $n) if (isset($hdrNorm2Col[$n])) return $hdrNorm2Col[$n];
-        return null;
-    };
+        $getCol = function(array $cands) use ($hdrNorm2Col) {
+            foreach ((array)$cands as $n) if (isset($hdrNorm2Col[$n])) return $hdrNorm2Col[$n];
+            return null;
+        };
 
-    $inserted = 0; $updated = 0;
+        $inserted = 0; $updated = 0;
 
-    foreach ($rows as $row) {
+        foreach ($rows as $row) {
 
-        $vals = [];
-        foreach ($hdrNorm2Col as $hn => $col) $vals[$hn] = $row[$col] ?? null;
+            $vals = [];
+            foreach ($hdrNorm2Col as $hn => $col) $vals[$hn] = $row[$col] ?? null;
 
-        $nip = trim((string)($vals['nip'] ?? ''));
-        $name = trim((string)($vals['nama_pensiunan'] ?? $vals['nama'] ?? ''));
+            $nip = trim((string)($vals['nip'] ?? ''));
+            $name = trim((string)($vals['nama_pensiunan'] ?? $vals['nama'] ?? ''));
 
-        if ($nip === '' && $name === '') continue; 
-        if ($nip === '') continue;
+            if ($nip === '' && $name === '') continue;
+            if ($nip === '') continue;
 
-        $payload = [];
-        foreach ($fieldMap as $hNorm => $dbCol) {
-            if (!array_key_exists($hNorm,$vals)) continue;
-            $val = $vals[$hNorm];
+            $payload = [];
+            foreach ($fieldMap as $hNorm => $dbCol) {
+                if (!array_key_exists($hNorm,$vals)) continue;
+                $val = $vals[$hNorm];
 
-            if (in_array($dbCol, ['birth_date','tmt_pensiun','tanggal_skep'])) {
-                $payload[$dbCol] = $this->asDate($val);
-            } elseif (in_array($dbCol, ['penpok','tunj_istri','tunj_anak','tunj_beras','penyesuaian','tunj_bulat','total_kotor','bersih'])) {
-                $payload[$dbCol] = $this->asNum($val);
-            } else {
-                $payload[$dbCol] = is_string($val) ? trim($val) : $val;
+                if (in_array($dbCol, ['birth_date','tmt_pensiun','tanggal_skep'])) {
+                    $payload[$dbCol] = $this->asDate($val);
+                } elseif (in_array($dbCol, ['penpok','tunj_istri','tunj_anak','tunj_beras','penyesuaian','tunj_bulat','total_kotor','bersih'])) {
+                    $payload[$dbCol] = $this->asNum($val);
+                } else {
+                    $payload[$dbCol] = is_string($val) ? trim($val) : $val;
+                }
             }
-        }
 
-        $payload['nip']  = $nip;
-        $payload['name'] = $name ?: ($payload['name'] ?? null);
+            $payload['nip']  = $nip;
+            $payload['name'] = $name ?: ($payload['name'] ?? null);
 
-        $mappedCols = [];
-        foreach ($fieldMap as $hNorm => $dbCol) {
-            if (isset($hdrNorm2Col[$hNorm])) $mappedCols[] = $hdrNorm2Col[$hNorm];
-        }
-        $extras = [];
-        foreach ($row as $col => $val) {
-            if (!in_array($col, $mappedCols, true)) {
-                $labelAsli = $hdrLabelByCol[$col] ?? $col;
-                $extras[$labelAsli] = is_string($val) ? trim($val) : $val;
+            $mappedCols = [];
+            foreach ($fieldMap as $hNorm => $dbCol) {
+                if (isset($hdrNorm2Col[$hNorm])) $mappedCols[] = $hdrNorm2Col[$hNorm];
             }
+            $extras = [];
+            foreach ($row as $col => $val) {
+                if (!in_array($col, $mappedCols, true)) {
+                    $labelAsli = $hdrLabelByCol[$col] ?? $col;
+                    $extras[$labelAsli] = is_string($val) ? trim($val) : $val;
+                }
+            }
+            if ($extras) $payload['extras'] = $extras;
+
+            $exists = Pension::where('nip', $nip)->first();
+            if ($exists) { $exists->update($payload); $updated++; }
+            else         { Pension::create($payload); $inserted++; }
         }
-        if ($extras) $payload['extras'] = $extras;
 
-        $exists = Pension::where('nip', $nip)->first();
-        if ($exists) { $exists->update($payload); $updated++; }
-        else         { Pension::create($payload); $inserted++; }
+        return redirect()->route('pensions.index')
+            ->with('ok', "Import selesai: tambah {$inserted}, update {$updated}");
     }
-
-    return redirect()->route('pensions.index')
-        ->with('ok', "Import selesai: tambah {$inserted}, update {$updated}");
-    }
-
 
     public function template(): StreamedResponse
     {
-    $headers = [
-        'NIP','KODE_CABANG','NAMA_CABANG','NOTAS','NO_KTP','KODE_JENIS_PENSIUN','NAMA_JENIS_PENSIUN',
-        'KODE_JENIS_DAPEM','NAMA_JENIS_DAPEM','NAMA_PENSIUNAN','TGL_LAHIR_PENSIUNAN','PENPOK',
-        'TUNJANGAN_ISTRI','TUNJANGAN_ANAK','TUNJANGAN_BERAS','PENYESUAIAN','TUNJANGAN_BULAT',
-        'TOTAL_KOTOR','BERSIH','RAPEL','KODE_JIWA','NAMA_PENERIMA','TGL_LAHIR_PENERIMA',
-        'KATEGORI USIA','ALAMAT','NAMA_DATI4','NAMA_DATI2','KODE_JURU_BAYAR','NAMA_JURU_BAYAR',
-        'NO_URUT','TMT_PENSIUN','NOMOR_SKEP','TANGGAL_SKEP','NO_REKENING','PENERBIT_SKEP','NPWP',
-        'TMT_STOP','KODE_STOP','NAMA_STOP','TELEPON','NO_HP','KODE_PANGKAT','KODE_CABANG',
-        'AWAL_FLAG','AKHIR_FLAG','NAMA_KELOMPOK_BAYAR','KODE_HUBUNGAN_KELUARGA','KODE_JENIS_KELAMIN',
-        'NAMA_AGAMA','TUNJANGAN_PP','TUNJANGAN_KD','TUNJANGAN_DAHOR','TUNJANGAN_CACAT','TUNJANGAN_PAJAK',
-        'POTONGAN_ASKES','POTONGAN_ASSOS','POTONGAN_KASDA','POTONGAN_ALIMENTASI','POTONGAN_SEWA',
-        'TGR','RN','CHEKLIST','STATUS LOAN GG',
-    ];
+        $headers = [
+            'NIP','KODE_CABANG','NAMA_CABANG','NOTAS','NO_KTP','KODE_JENIS_PENSIUN','NAMA_JENIS_PENSIUN',
+            'KODE_JENIS_DAPEM','NAMA_JENIS_DAPEM','NAMA_PENSIUNAN','TGL_LAHIR_PENSIUNAN','PENPOK',
+            'TUNJANGAN_ISTRI','TUNJANGAN_ANAK','TUNJANGAN_BERAS','PENYESUAIAN','TUNJANGAN_BULAT',
+            'TOTAL_KOTOR','BERSIH','RAPEL','KODE_JIWA','NAMA_PENERIMA','TGL_LAHIR_PENERIMA',
+            'KATEGORI USIA','ALAMAT','NAMA_DATI4','NAMA_DATI2','KODE_JURU_BAYAR','NAMA_JURU_BAYAR',
+            'NO_URUT','TMT_PENSIUN','NOMOR_SKEP','TANGGAL_SKEP','NO_REKENING','PENERBIT_SKEP','NPWP',
+            'TMT_STOP','KODE_STOP','NAMA_STOP','TELEPON','NO_HP','KODE_PANGKAT','KODE_CABANG',
+            'AWAL_FLAG','AKHIR_FLAG','NAMA_KELOMPOK_BAYAR','KODE_HUBUNGAN_KELUARGA','KODE_JENIS_KELAMIN',
+            'NAMA_AGAMA','TUNJANGAN_PP','TUNJANGAN_KD','TUNJANGAN_DAHOR','TUNJANGAN_CACAT','TUNJANGAN_PAJAK',
+            'POTONGAN_ASKES','POTONGAN_ASSOS','POTONGAN_KASDA','POTONGAN_ALIMENTASI','POTONGAN_SEWA',
+            'TGR','RN','CHEKLIST','STATUS LOAN GG',
+        ];
 
-    $ss = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-    $ws = $ss->getActiveSheet();
-    foreach ($headers as $i => $h) $ws->setCellValueByColumnAndRow($i+1, 1, $h);
+        $ss = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $ws = $ss->getActiveSheet();
+        foreach ($headers as $i => $h) $ws->setCellValueByColumnAndRow($i+1, 1, $h);
 
-    $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($ss, 'Xlsx');
-    return new StreamedResponse(function() use ($writer){ $writer->save('php://output'); }, 200, [
-        'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition' => 'attachment; filename="template-data-pensiun.xlsx"',
-    ]);
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($ss, 'Xlsx');
+        return new StreamedResponse(function() use ($writer){ $writer->save('php://output'); }, 200, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="template-data-pensiun.xlsx"',
+        ]);
+    }
+
+    public function show(Pension $pension)
+    {
+        $p = $pension;
+        return view('pensions.show', compact('p'));
     }
 
     private function validatePayload(Request $r, ?int $id): array

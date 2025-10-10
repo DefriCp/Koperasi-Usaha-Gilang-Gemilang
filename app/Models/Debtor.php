@@ -15,6 +15,7 @@ class Debtor extends Model
         'nopen',
         'name',
         'plafond',
+        'gaji_pensiun',
         'installment',
         'tenor',
         'installment_no',
@@ -24,45 +25,24 @@ class Debtor extends Model
         'status',
         'approved_by',
         'approved_at',
-        'import_batch', // untuk rollback import
+        'import_batch',
     ];
 
     protected $casts = [
         'akad_date'   => 'date',
         'approved_at' => 'datetime',
         'plafond'     => 'decimal:2',
+        'gaji_pensiun'=> 'decimal:2', 
         'installment' => 'decimal:2',
         'outstanding' => 'decimal:2',
         'arrears'     => 'decimal:2',
     ];
 
-    /** Relasi utama */
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(Project::class);
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    /** Cicilan (repayments) */
-    public function repayments(): HasMany
-    {
-        return $this->hasMany(Repayment::class, 'debtor_id');
-    }
-
-    /** Semua detail (jika tabel debtor_details ada) */
-    public function details(): HasMany
-    {
-        return $this->hasMany(\App\Models\DebtorDetail::class, 'debtor_id');
-    }
-
-    /** Satu detail terakhir (praktis dipakai kalau perlu yang terbaru saja) */
-    public function latestDetail(): HasOne
-    {
-        // Ambil baris dengan id terbesar sebagai yang terbaru
+    public function project(): BelongsTo { return $this->belongsTo(Project::class); }
+    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+    public function repayments(): HasMany { return $this->hasMany(Repayment::class, 'debtor_id'); }
+    public function details(): HasMany { return $this->hasMany(\App\Models\DebtorDetail::class, 'debtor_id'); }
+    public function latestDetail(): HasOne {
         return $this->hasOne(\App\Models\DebtorDetail::class, 'debtor_id')->latestOfMany('id');
     }
 }

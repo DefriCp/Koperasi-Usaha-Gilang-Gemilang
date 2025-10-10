@@ -155,11 +155,13 @@
   </main>
 
   <script>
-    // Toggle role
+    // Toggle role (dibuat aman meski elemen tidak ada)
     (function(){
       const admin = document.getElementById('seg-admin');
       const user  = document.getElementById('seg-user');
       const role  = document.getElementById('roleInput');
+      if (!admin || !user || !role) return; // <-- guard penting agar tidak error
+
       function sel(who){
         admin.setAttribute('aria-selected', who==='admin');
         user .setAttribute('aria-selected', who==='user');
@@ -172,10 +174,14 @@
     // Slideshow 3 detik
     (function(){
       const el = document.getElementById('hero');
+      if (!el) return; // guard tambahan
+
       const slides = [
-        "{{ asset('img/bg.png') }}",
+        "{{ asset('img/bg3.jpg') }}",
         "{{ asset('img/bg2.png') }}",
+        "{{ asset('img/anggota.jpg') }}",
       ];
+
       let i = 0;
       setInterval(()=>{
         el.classList.add('fade-out');
@@ -184,7 +190,7 @@
           el.style.backgroundImage = `url('${slides[i]}')`;
           el.classList.remove('fade-out');
         }, 400);
-      }, 3000);
+      }, 5000);
     })();
   </script>
 </body>

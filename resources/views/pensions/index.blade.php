@@ -24,25 +24,23 @@
         <thead class="bg-gray-50">
           <tr class="text-gray-900">
             <th class="px-4 py-3 text-left font-semibold">NIP</th>
-            <th class="px-4 py-3 text-left font-semibold">Nama</th>
-            <th class="px-4 py-3 text-left font-semibold">Cabang</th>
-            <th class="px-4 py-3 text-right font-semibold">Bersih</th>
             <th class="px-4 py-3"></th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
         @forelse($rows as $r)
           <tr class="hover:bg-gray-50">
-            <td class="px-4 py-3">{{ $r->nip }}</td>
-            <td class="px-4 py-3">{{ $r->name }}</td>
-            <td class="px-4 py-3">{{ $r->branch_name }}</td>
-            <td class="px-4 py-3 text-right">Rp {{ number_format((float)$r->bersih,0,',','.') }}</td>
+            <td class="px-4 py-3">
+              <a href="{{ route('pensions.show', $r) }}" class="text-indigo-700 font-semibold hover:underline">
+                {{ $r->nip }}
+              </a>
+            </td>
             <td class="px-4 py-3 text-right">
-              <a href="{{ route('pensions.edit',$r) }}" class="text-indigo-600 font-semibold">Edit</a>
+              <a href="{{ route('pensions.edit',$r) }}" class="text-gray-500 hover:text-gray-700">Edit</a>
             </td>
           </tr>
         @empty
-          <tr><td colspan="5" class="px-4 py-8 text-center text-gray-600">Tidak ada data.</td></tr>
+          <tr><td colspan="2" class="px-4 py-8 text-center text-gray-600">Tidak ada data.</td></tr>
         @endforelse
         </tbody>
       </table>
