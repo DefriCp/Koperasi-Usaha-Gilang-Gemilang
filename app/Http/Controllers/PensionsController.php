@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PensionsController extends Controller
 {
-    public function index(Request $r)
+        public function index(Request $r)
     {
         $q = Pension::query();
 
@@ -19,7 +19,13 @@ class PensionsController extends Controller
             $s = trim((string)$r->input('q'));
             $q->where(function ($w) use ($s) {
                 $w->where('nip', 'ilike', "%{$s}%")
-                  ->orWhere('name', 'ilike', "%{$s}%");
+                ->orWhere('name', 'ilike', "%{$s}%")
+                ->orWhere('branch_name', 'ilike', "%{$s}%")
+                ->orWhere('payer_name', 'ilike', "%{$s}%")
+                ->orWhere('account_number', 'ilike', "%{$s}%")
+                ->orWhere('ktp', 'ilike', "%{$s}%")
+                ->orWhere('phone', 'ilike', "%{$s}%")
+                ->orWhere('phone_alt', 'ilike', "%{$s}%");
             });
         }
 

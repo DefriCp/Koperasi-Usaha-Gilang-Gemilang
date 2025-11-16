@@ -34,9 +34,12 @@ Route::middleware(['auth','verified'])->group(function () {
     Route::middleware('role:checker')->group(function () {
         Route::get   ('/projects/create',         [ProjectController::class,'create'])->name('projects.create');
         Route::post  ('/projects',                [ProjectController::class,'store' ])->name('projects.store');
-        Route::get   ('/projects/{project}/edit', [ProjectController::class,'edit'  ])->name('projects.edit');
-        Route::put   ('/projects/{project}',      [ProjectController::class,'update'])->name('projects.update');
-        Route::delete('/projects/{project}',      [ProjectController::class,'destroy'])->name('projects.destroy');
+
+        // dynamic guarded numeric
+        Route::get   ('/projects/{project}/edit', [ProjectController::class,'edit'  ])->whereNumber('project')->name('projects.edit');
+        Route::put   ('/projects/{project}',      [ProjectController::class,'update'])->whereNumber('project')->name('projects.update');
+        Route::delete('/projects/{project}',      [ProjectController::class,'destroy'])->whereNumber('project')->name('projects.destroy');
+
         Route::get ('/projects/import',  [ProjectController::class,'importForm' ])->name('projects.import');
         Route::post('/projects/import',  [ProjectController::class,'importStore'])->name('projects.import.store');
     });
@@ -46,6 +49,7 @@ Route::middleware(['auth','verified'])->group(function () {
 Route::middleware(['auth','verified'])->group(function () {
 
     Route::get('/debtors', [DebtorController::class,'index'])->name('debtors.index');
+
     Route::middleware('role:inputer|checker')->group(function () {
         Route::get ('/debtors/create',  [DebtorController::class,'create'     ])->name('debtors.create');
         Route::post('/debtors',         [DebtorController::class,'store'      ])->name('debtors.store');
@@ -53,13 +57,9 @@ Route::middleware(['auth','verified'])->group(function () {
         Route::get ('/debtors/import',  [DebtorController::class,'importForm' ])->name('debtors.import');
         Route::post('/debtors/import',  [DebtorController::class,'importStore'])->name('debtors.import.store');
 
-        Route::get ('/debtors/{debtor}/edit', [DebtorController::class,'edit'])
-            ->whereNumber('debtor')->name('debtors.edit');
-        Route::put ('/debtors/{debtor}',      [DebtorController::class,'update'])
-            ->whereNumber('debtor')->name('debtors.update');
-
-        Route::delete('/debtors/{debtor}', [DebtorController::class,'destroy'])
-            ->whereNumber('debtor')->name('debtors.destroy');
+        Route::get   ('/debtors/{debtor}/edit', [DebtorController::class,'edit'])->whereNumber('debtor')->name('debtors.edit');
+        Route::put   ('/debtors/{debtor}',      [DebtorController::class,'update'])->whereNumber('debtor')->name('debtors.update');
+        Route::delete('/debtors/{debtor}',      [DebtorController::class,'destroy'])->whereNumber('debtor')->name('debtors.destroy');
 
         Route::delete('/debtors/import/rollback/{batch}', [DebtorController::class,'rollbackImport'])
             ->name('debtors.import.rollback');
@@ -102,31 +102,33 @@ Route::middleware(['auth','verified'])->group(function () {
     });
 });
 
-
 // ===================== REPORTING =====================
 Route::middleware(['auth','verified'])->group(function () {
-    Route::get('/reporting',                          [ReportingController::class,'index'])->name('reporting.index');
-
-    Route::get('/reporting/outstanding',              [ReportingController::class,'outstanding'])->name('reporting.outstanding');
-    Route::get('/reporting/outstanding/export',       [ReportingController::class,'exportOutstanding'])->name('reporting.outstanding.export');
-
-    Route::get('/reporting/arrears',                  [ReportingController::class,'arrears'])->name('reporting.arrears');
-    Route::get('/reporting/arrears/export',           [ReportingController::class,'exportArrears'])->name('reporting.arrears.export');
+    Route::get('/reporting',                    [ReportingController::class,'index'])->name('reporting.index');
+    Route::get('/reporting/outstanding',        [ReportingController::class,'outstanding'])->name('reporting.outstanding');
+    Route::get('/reporting/outstanding/export', [ReportingController::class,'exportOutstanding'])->name('reporting.outstanding.export');
+    Route::get('/reporting/arrears',            [ReportingController::class,'arrears'])->name('reporting.arrears');
+    Route::get('/reporting/arrears/export',     [ReportingController::class,'exportArrears'])->name('reporting.arrears.export');
 });
 
 // ===================== DATA PENSIUN =====================
+// NOTE: static routes MUST come before dynamic `{pension}` to avoid collisions.
 Route::middleware(['auth','verified'])->group(function () {
-    Route::get('/pensions',                [PensionsController::class,'index'])->name('pensions.index');
-    Route::get('/pensions/create',         [PensionsController::class,'create'])->name('pensions.create');
-    Route::post('/pensions',               [PensionsController::class,'store'])->name('pensions.store');
-    Route::get('/pensions/{pension}/edit', [PensionsController::class,'edit'])->name('pensions.edit');
-    Route::get('/pensions/{pension}',      [PensionsController::class,'show'])->name('pensions.show');
-    Route::put('/pensions/{pension}',      [PensionsController::class,'update'])->name('pensions.update');
-    Route::delete('/pensions/{pension}',   [PensionsController::class,'destroy'])->name('pensions.destroy');
+    // list & create
+    Route::get ('/pensions',         [PensionsController::class,'index'])->name('pensions.index');
+    Route::get ('/pensions/create',  [PensionsController::class,'create'])->name('pensions.create');
+    Route::post('/pensions',         [PensionsController::class,'store'])->name('pensions.store');
 
-    Route::get('/pensions/import',         [PensionsController::class,'importForm'])->name('pensions.import.form');
-    Route::post('/pensions/import',        [PensionsController::class,'importStore'])->name('pensions.import.store');
-    Route::get('/pensions/template',       [PensionsController::class,'template'])->name('pensions.template');
+    // static utilities (import/template) — placed BEFORE dynamic
+    Route::get ('/pensions/import',   [PensionsController::class,'importForm'])->name('pensions.import.form');
+    Route::post('/pensions/import',   [PensionsController::class,'importStore'])->name('pensions.import.store');
+    Route::get ('/pensions/template', [PensionsController::class,'template'])->name('pensions.template');
+
+    // dynamic routes guarded numeric
+    Route::get   ('/pensions/{pension}/edit', [PensionsController::class,'edit'])->whereNumber('pension')->name('pensions.edit');
+    Route::get   ('/pensions/{pension}',      [PensionsController::class,'show'])->whereNumber('pension')->name('pensions.show');
+    Route::put   ('/pensions/{pension}',      [PensionsController::class,'update'])->whereNumber('pension')->name('pensions.update');
+    Route::delete('/pensions/{pension}',      [PensionsController::class,'destroy'])->whereNumber('pension')->name('pensions.destroy');
 });
 
 require __DIR__.'/auth.php';
